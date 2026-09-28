@@ -134,7 +134,7 @@ button:disabled {
     font-style: italic;
     font-weight: 500;
     margin: 0;
-    color: #a4adc8; /* Slight blue-grey tint */
+    color: #a4adc8; 
 }
 .confidence-mono {
     font-family: 'JetBrains Mono', monospace;
@@ -199,4 +199,12 @@ button:disabled {
     color: #ff5555;
     font-size: 14px;
     margin-top: 10px;
+}
+
+/* --- MOBILE RESPONSIVE FIX --- */
+/* Ye dono cards ko mobile par ek ke niche ek la dega */
+@media (max-width: 768px) {
+    .result {
+        grid-template-columns: 1fr;
+    }
 }
