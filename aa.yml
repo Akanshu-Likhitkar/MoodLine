@@ -1,0 +1,74 @@
+```yaml
+name: Deploy MoodLine to EC2
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script_stop: true
+
+          script: |
+            set -e
+
+            APP_DIR="$HOME/MoodLine"
+
+            # Clone repository first time
+            if [ ! -d "$APP_DIR/.git" ]; then
+              git clone https://github.com/Akanshu-Likhitkar/MoodLine.git "$APP_DIR"
+            else
+              cd "$APP_DIR"
+              git fetch origin main
+              git reset --hard origin/main
+            fi
+
+            cd "$APP_DIR"
+
+            # Python 3.11 required
+            if ! command -v python3.11 >/dev/null 2>&1; then
+              echo "Python 3.11 is required."
+              exit 1
+            fi
+
+            # Create virtual environment
+            python3.11 -m venv venv
+
+            # Activate virtual environment
+            source venv/bin/activate
+
+            # Install dependencies
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+
+            # Stop previous FastAPI process
+            pkill -f "uvicorn main:app" || true
+
+            # Start FastAPI
+            nohup uvicorn main:app \
+              --host 0.0.0.0 \
+              --port 8000 \
+              > app.log 2>&1 &
+
+            # Wait for application
+            sleep 5
+
+            # Health check
+            curl --fail --silent http://127.0.0.1:8000/health
+
+            echo "MoodLine deployed successfully!"
+```
